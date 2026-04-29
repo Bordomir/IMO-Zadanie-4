@@ -15,6 +15,7 @@
 #include "../include/KRegret.hpp"
 #include "../include/LocalSearch.hpp"
 #include "../include/MemorySteepLocalSearch.hpp"
+#include "../include/AdvancedLocalSearch.hpp"
 
 using namespace std;
 
