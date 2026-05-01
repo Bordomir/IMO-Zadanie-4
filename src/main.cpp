@@ -16,6 +16,7 @@
 #include "../include/LocalSearch.hpp"
 #include "../include/MemorySteepLocalSearch.hpp"
 #include "../include/AdvancedLocalSearch.hpp"
+#include "../include/MSLS.hpp"
 
 using namespace std;
 
@@ -23,12 +24,11 @@ struct Statistic
 {
     string data;
     string solver;
-    string localSearch;
     double average = 0;
     double min = numeric_limits<double>::max();
     double max = numeric_limits<double>::min();
 
-    Statistic(string data, string solver, string localSearch) : data(move(data)), solver(move(solver)), localSearch(move(localSearch)) {};
+    Statistic(string data, string solver) : data(move(data)), solver(move(solver)) {};
     void update(double value)
     {
         average += value;
@@ -37,7 +37,7 @@ struct Statistic
     }
     void print() const
     {
-        std::println("{};{};{};{:.4f};{:.4f};{:.4f}", data, solver, localSearch, average, min, max);
+        std::println("{};{};{:.4f};{:.4f};{:.4f}", data, solver, average, min, max);
     }
 };
 
@@ -46,145 +46,106 @@ int main()
     DataLoader dataA("../data/TSPA.csv", "DataA");
     DataLoader dataB("../data/TSPB.csv", "DataB");
 
-    int startNode = 0;
+    RandomSolver randomSolverA(dataA, 0);
+    RandomSolver randomSolverB(dataB, 0);
 
-    vector<unique_ptr<Solver>> startingPointSolvers;
-    startingPointSolvers.reserve(2);
-    startingPointSolvers.emplace_back(make_unique<RandomSolver>(dataA, 0));
-    startingPointSolvers.emplace_back(make_unique<RandomSolver>(dataB, 1));
-    
-    vector<unique_ptr<Solver>> KRegrets;
-    KRegrets.reserve(2);
-    KRegrets.emplace_back(make_unique<KRegret>(dataA, startNode, 2));
-    KRegrets.emplace_back(make_unique<KRegret>(dataB, startNode, 2));
+    MemorySteepLocalSearch LocalSearchA(dataA, vector<int>{});
+    MemorySteepLocalSearch LocalSearchB(dataB, vector<int>{});
 
+    vector<unique_ptr<AdvancedLocalSearch>> MSLSadvancedLocalSearches;
+    MSLSadvancedLocalSearches.reserve(2);
+    MSLSadvancedLocalSearches.emplace_back(make_unique<MSLS>(dataA, randomSolverA, LocalSearchA, 200, -1, false, true));
+    MSLSadvancedLocalSearches.emplace_back(make_unique<MSLS>(dataB, randomSolverB, LocalSearchB, 200, -1, false, true));
 
-    vector<unique_ptr<LocalSearch>> localSearches;
-    localSearches.reserve(3);
-    // localSearches.emplace_back(make_unique<SteepLocalSearch>(startingPointSolvers[0], MoveType::SwapEdges));
-    localSearches.emplace_back(make_unique<MemorySteepLocalSearch>(startingPointSolvers[0], MoveType::SwapEdges));
-    // localSearches.emplace_back(make_unique<CandidateSteepLocalSearch>(startingPointSolvers[0], 10));
-    mt19937 rng{42};
-
-    // unique_ptr<Solver> randomSolverA = make_unique<RandomSolver>(dataA, startNode);
-    // randomSolverA->solve();
-    // MemorySteepLocalSearch localSearch(randomSolverA, MoveType::SwapEdges);
-    // localSearch.improve();
-
-    // localSearch.print();
-
-    // exit(0);
-    
     // Experiment
-    int numRuns = 100;
-    int maxNode = min(dataA.numNodes, dataB.numNodes);
-    int maxTestsPossible = min(numRuns, maxNode);
+    int numRuns = 20;
 
-    std::println("Running {} tests", maxTestsPossible);
+    vector<Statistic> MSLSscoreStatistics;
+    MSLSscoreStatistics.reserve(MSLSadvancedLocalSearches.size());
+    vector<Statistic> MSLStimeStatistics;
+    MSLStimeStatistics.reserve(MSLSadvancedLocalSearches.size());
 
-    auto allNodesView = views::iota(0, maxNode);
-
-    vector<int> startingNodes(maxTestsPossible);
-    ranges::sample(allNodesView, startingNodes.begin(), maxTestsPossible, rng);
-
-    vector<Statistic> scoreStatistics;
-    scoreStatistics.reserve(startingPointSolvers.size() * localSearches.size());
-    vector<Statistic> timeStatistics;
-    timeStatistics.reserve(startingPointSolvers.size() * localSearches.size());
-    vector<Statistic> scoreStatisticsForKRegret;
-    scoreStatisticsForKRegret.reserve(KRegrets.size());
-    vector<Statistic> timeStatisticsForKRegret;
-    timeStatisticsForKRegret.reserve(KRegrets.size());
-    for (auto &solver : startingPointSolvers)
+    for (auto &solver : MSLSadvancedLocalSearches)
     {
-        for (auto &localSearch : localSearches)
-        {
-            scoreStatistics.emplace_back(
-                solver->data->getName(),
-                solver->getAlgorithmName(),
-                localSearch->getAlgorithmName());
-            timeStatistics.emplace_back(
-                solver->data->getName(),
-                solver->getAlgorithmName(),
-                localSearch->getAlgorithmName());
-        }
-    }
-    for (auto &solver : KRegrets)
-    {
-        scoreStatisticsForKRegret.emplace_back(
+        MSLSscoreStatistics.emplace_back(
             solver->data->getName(),
-            solver->getAlgorithmName(),
-            "None");
-        timeStatisticsForKRegret.emplace_back(
+            solver->getAlgorithmName());
+        MSLStimeStatistics.emplace_back(
             solver->data->getName(),
-            solver->getAlgorithmName(),
-            "None");
+            solver->getAlgorithmName());
     }
-
     chrono::time_point<chrono::steady_clock> startTime, endTime;
-    for (int startNode : startingNodes)
+    for (int run = 0; run < numRuns; run++)
     {
-        for (size_t i = 0; i < startingPointSolvers.size(); i++)
+        for (size_t i = 0; i < MSLSadvancedLocalSearches.size(); i++)
         {
-            const auto &solver = startingPointSolvers[i];
-
-            solver->startNode = startNode;
-            solver->solve();
-
-            for (size_t j = 0; j < localSearches.size(); j++)
-            {
-                const auto &localSearch = localSearches[j];
-
-                localSearch->data = solver->data;
-                localSearch->solution = solver->solution;
-
-                startTime = chrono::steady_clock::now();
-                localSearch->improve();
-                endTime = chrono::steady_clock::now();
-
-                int index = i * localSearches.size() + j;
-                if (localSearch->solutionScore > scoreStatistics[index].max)
-                {
-                    localSearch->saveToFile(format("{}_{}", solver->data->getName(), solver->getAlgorithmName()));
-                }
-
-                scoreStatistics[index].update(localSearch->solutionScore);
-                timeStatistics[index].update(chrono::duration<double, std::milli>(endTime - startTime).count());
-            }
-        }
-    }
-    for (int startNode : startingNodes)
-    {
-        for (size_t i = 0; i < KRegrets.size(); i++)
-        {
-            const auto &solver = KRegrets[i];
-
-            solver->startNode = startNode;
+            const auto &solver = MSLSadvancedLocalSearches[i];
 
             startTime = chrono::steady_clock::now();
             solver->solve();
             endTime = chrono::steady_clock::now();
 
-            if (solver->solutionScore > scoreStatisticsForKRegret[i].max)
+            if (solver->bestSolutionScore > MSLSscoreStatistics[i].max)
             {
-                solver->saveToFile(solver->data->getName());
+                solver->saveToFile(format("{}_{}", solver->data->getName(), solver->getAlgorithmName()));
             }
 
-            scoreStatisticsForKRegret[i].update(solver->solutionScore);
-            timeStatisticsForKRegret[i].update(chrono::duration<double, std::milli>(endTime - startTime).count());
+            MSLSscoreStatistics[i].update(solver->bestSolutionScore);
+            MSLStimeStatistics[i].update(chrono::duration<double, std::milli>(endTime - startTime).count());
         }
     }
-    for (auto &stat : scoreStatisticsForKRegret)
-        stat.average /= maxTestsPossible;
-    for (auto &stat : timeStatisticsForKRegret)
-        stat.average /= maxTestsPossible;
+    for (auto &stat : MSLSscoreStatistics)
+        stat.average /= numRuns;
+    for (auto &stat : MSLStimeStatistics)
+        stat.average /= numRuns;
+
+    double timeLimitA = MSLStimeStatistics[0].average;
+    double timeLimitB = MSLStimeStatistics[1].average;
+
+    vector<unique_ptr<AdvancedLocalSearch>> advancedLocalSearches;
+    advancedLocalSearches.reserve(6);
+    // TODO: Add more algorithms
+
+    vector<Statistic> scoreStatistics;
+    scoreStatistics.reserve(advancedLocalSearches.size());
+    vector<Statistic> timeStatistics;
+    timeStatistics.reserve(advancedLocalSearches.size());
+    for (auto &solver : advancedLocalSearches)
+    {
+        scoreStatistics.emplace_back(
+            solver->data->getName(),
+            solver->getAlgorithmName());
+        timeStatistics.emplace_back(
+            solver->data->getName(),
+            solver->getAlgorithmName());
+    }
+    for (int run = 0; run < numRuns; run++)
+    {
+        for (size_t i = 0; i < advancedLocalSearches.size(); i++)
+        {
+            const auto &solver = advancedLocalSearches[i];
+
+            startTime = chrono::steady_clock::now();
+            solver->solve();
+            endTime = chrono::steady_clock::now();
+
+            if (solver->bestSolutionScore > scoreStatistics[i].max)
+            {
+                solver->saveToFile(format("{}_{}", solver->data->getName(), solver->getAlgorithmName()));
+            }
+
+            scoreStatistics[i].update(solver->bestSolutionScore);
+            timeStatistics[i].update(chrono::duration<double, std::milli>(endTime - startTime).count());
+        }
+    }
     for (auto &stat : scoreStatistics)
-        stat.average /= maxTestsPossible;
+        stat.average /= numRuns;
     for (auto &stat : timeStatistics)
-        stat.average /= maxTestsPossible;
+        stat.average /= numRuns;
+
     
     auto allScoreStatistics = {
-        scoreStatisticsForKRegret,
+        MSLSscoreStatistics,
         scoreStatistics,
     };
 
@@ -193,7 +154,7 @@ int main()
         stat.print();
 
     auto allTimeStatistics = {
-        timeStatisticsForKRegret,
+        MSLStimeStatistics,
         timeStatistics
     };
 

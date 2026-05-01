@@ -31,6 +31,11 @@ AdvancedLocalSearch::AdvancedLocalSearch(DataLoader &data, RandomSolver &randomS
     }
     this->needsStartingSolution = needsStartingSolution;
     this->usesLocalSearch = usesLocalSearch;
+    setData(data);
+}
+
+void AdvancedLocalSearch::setData(DataLoader &data)
+{
     this->randomSolver->data = &data;
     this->LocalSearch->data = &data;
 }
@@ -38,6 +43,7 @@ AdvancedLocalSearch::AdvancedLocalSearch(DataLoader &data, RandomSolver &randomS
 void AdvancedLocalSearch::solve()
 {
     bestSolution = vector<int>();
+    bestSolution.clear();
     bestSolutionScore = numeric_limits<int>::min();
     currentIterations = 0;
     startTime = chrono::steady_clock::now();
@@ -45,7 +51,7 @@ void AdvancedLocalSearch::solve()
     {
         bestSolution = getRandomizedSolution();
         bestSolution = improveSolution(bestSolution);
-        bestSolutionScore = calculateScore(bestSolution); 
+        bestSolutionScore = LocalSearch->solutionScore;
     }
     while(canContinue())
     {

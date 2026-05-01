@@ -4,7 +4,6 @@
 #include <chrono>
 #include <string>
 
-// #include "Solver.hpp"
 #include "DataLoader.hpp"
 #include "RandomSolver.hpp"
 #include "MemorySteepLocalSearch.hpp"
@@ -36,6 +35,7 @@ public:
     AdvancedLocalSearch(DataLoader &data, RandomSolver &randomSolver, MemorySteepLocalSearch &localSearch, int maxIterations = -1, double timeLimit = -1, bool needsStartingSolution = true, bool usesLocalSearch = true);
     virtual ~AdvancedLocalSearch() = default;
     virtual string getAlgorithmName() const = 0;
+    void setData(DataLoader &data);
     void solve();
     vector<int> getRandomizedSolution() const;
     vector<int> improveSolution(vector<int> &solution) const;
