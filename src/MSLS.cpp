@@ -10,7 +10,7 @@ string MSLS::getAlgorithmName() const
     return "MSLS";
 }
 
-vector<int> MSLS::createNewSolution() const
+vector<int> MSLS::createNewSolution()
 {
     return getRandomizedSolution();
 }

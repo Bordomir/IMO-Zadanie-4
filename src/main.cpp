@@ -17,6 +17,7 @@
 #include "../include/MemorySteepLocalSearch.hpp"
 #include "../include/AdvancedLocalSearch.hpp"
 #include "../include/MSLS.hpp"
+#include "../include/ILS.hpp"
 
 using namespace std;
 
@@ -81,6 +82,8 @@ int main()
         {
             const auto &solver = MSLSadvancedLocalSearches[i];
 
+            println("{} - {} - {}", run, solver->data->getName(), solver->getAlgorithmName());
+
             startTime = chrono::steady_clock::now();
             solver->solve();
             endTime = chrono::steady_clock::now();
@@ -101,9 +104,12 @@ int main()
 
     double timeLimitA = MSLStimeStatistics[0].average;
     double timeLimitB = MSLStimeStatistics[1].average;
+    println("Time limits: {:.4f}; {:.4f}", timeLimitA, timeLimitB);
 
     vector<unique_ptr<AdvancedLocalSearch>> advancedLocalSearches;
     advancedLocalSearches.reserve(6);
+    advancedLocalSearches.emplace_back(make_unique<ILS>(dataA, randomSolverA, LocalSearchA, 0, -1, timeLimitA, true, true));
+    advancedLocalSearches.emplace_back(make_unique<ILS>(dataB, randomSolverB, LocalSearchB, 0, -1, timeLimitB, true, true));
     // TODO: Add more algorithms
 
     vector<Statistic> scoreStatistics;
@@ -124,6 +130,8 @@ int main()
         for (size_t i = 0; i < advancedLocalSearches.size(); i++)
         {
             const auto &solver = advancedLocalSearches[i];
+
+            println("{} - {} - {}", run, solver->data->getName(), solver->getAlgorithmName());
 
             startTime = chrono::steady_clock::now();
             solver->solve();

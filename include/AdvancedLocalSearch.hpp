@@ -40,7 +40,7 @@ public:
     vector<int> getRandomizedSolution() const;
     vector<int> improveSolution(vector<int> &solution) const;
     bool canContinue() const;
-    virtual vector<int> createNewSolution() const = 0;
+    virtual vector<int> createNewSolution() = 0;
     int calculateScore(const vector<int> &solution) const;
     void print() const;
     void saveToFile(const string &filename = "") const;
