@@ -65,6 +65,8 @@ int main()
     MSLSscoreStatistics.reserve(MSLSadvancedLocalSearches.size());
     vector<Statistic> MSLStimeStatistics;
     MSLStimeStatistics.reserve(MSLSadvancedLocalSearches.size());
+    vector<Statistic> MSLSiterationStatistics;
+    MSLSiterationStatistics.reserve(MSLSadvancedLocalSearches.size());
 
     for (auto &solver : MSLSadvancedLocalSearches)
     {
@@ -72,6 +74,9 @@ int main()
             solver->data->getName(),
             solver->getAlgorithmName());
         MSLStimeStatistics.emplace_back(
+            solver->data->getName(),
+            solver->getAlgorithmName());
+        MSLSiterationStatistics.emplace_back(
             solver->data->getName(),
             solver->getAlgorithmName());
     }
@@ -95,11 +100,14 @@ int main()
 
             MSLSscoreStatistics[i].update(solver->bestSolutionScore);
             MSLStimeStatistics[i].update(chrono::duration<double, std::milli>(endTime - startTime).count());
+            MSLSiterationStatistics[i].update(solver->currentIterations);
         }
     }
     for (auto &stat : MSLSscoreStatistics)
         stat.average /= numRuns;
     for (auto &stat : MSLStimeStatistics)
+        stat.average /= numRuns;
+    for (auto &stat : MSLSiterationStatistics)
         stat.average /= numRuns;
 
     double timeLimitA = MSLStimeStatistics[0].average;
@@ -116,12 +124,17 @@ int main()
     scoreStatistics.reserve(advancedLocalSearches.size());
     vector<Statistic> timeStatistics;
     timeStatistics.reserve(advancedLocalSearches.size());
+    vector<Statistic> iterationStatistics;
+    iterationStatistics.reserve(advancedLocalSearches.size());
     for (auto &solver : advancedLocalSearches)
     {
         scoreStatistics.emplace_back(
             solver->data->getName(),
             solver->getAlgorithmName());
         timeStatistics.emplace_back(
+            solver->data->getName(),
+            solver->getAlgorithmName());
+        iterationStatistics.emplace_back(
             solver->data->getName(),
             solver->getAlgorithmName());
     }
@@ -144,11 +157,14 @@ int main()
 
             scoreStatistics[i].update(solver->bestSolutionScore);
             timeStatistics[i].update(chrono::duration<double, std::milli>(endTime - startTime).count());
+            iterationStatistics[i].update(solver->currentIterations);
         }
     }
     for (auto &stat : scoreStatistics)
         stat.average /= numRuns;
     for (auto &stat : timeStatistics)
+        stat.average /= numRuns;
+    for (auto &stat : iterationStatistics)
         stat.average /= numRuns;
 
     
@@ -168,6 +184,15 @@ int main()
 
     println("\nTime statistics:");
     for(const auto &stat : allTimeStatistics | views::join)
+        stat.print();
+
+    auto allIterationStatistics = {
+        MSLSiterationStatistics,
+        iterationStatistics
+    };
+
+    println("\nIteration statistics:");
+    for(const auto &stat : allIterationStatistics | views::join)
         stat.print();
 
     return 0;
