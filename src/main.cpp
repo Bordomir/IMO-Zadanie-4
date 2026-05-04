@@ -18,6 +18,7 @@
 #include "../include/AdvancedLocalSearch.hpp"
 #include "../include/MSLS.hpp"
 #include "../include/ILS.hpp"
+#include "../include/LNS.hpp"
 
 using namespace std;
 
@@ -116,8 +117,11 @@ int main()
 
     vector<unique_ptr<AdvancedLocalSearch>> advancedLocalSearches;
     advancedLocalSearches.reserve(6);
-    advancedLocalSearches.emplace_back(make_unique<ILS>(dataA, randomSolverA, LocalSearchA, 0, -1, timeLimitA, true, true));
-    advancedLocalSearches.emplace_back(make_unique<ILS>(dataB, randomSolverB, LocalSearchB, 0, -1, timeLimitB, true, true));
+    constexpr unsigned int SEED = 0;
+    advancedLocalSearches.emplace_back(make_unique<ILS>(dataA, randomSolverA, LocalSearchA, SEED, -1, timeLimitA, true, true));
+    advancedLocalSearches.emplace_back(make_unique<ILS>(dataB, randomSolverB, LocalSearchB, SEED, -1, timeLimitB, true, true));
+    advancedLocalSearches.emplace_back(make_unique<LNS>(dataA, randomSolverA, LocalSearchA, SEED, 30, -1, timeLimitA, true, true));
+    advancedLocalSearches.emplace_back(make_unique<LNS>(dataB, randomSolverB, LocalSearchB, SEED, 30, -1, timeLimitB, true, true));
     // TODO: Add more algorithms
 
     vector<Statistic> scoreStatistics;
