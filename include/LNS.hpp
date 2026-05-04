@@ -31,4 +31,5 @@ private:
 
     void destroy(std::vector<int>& solution);
     void repair(std::vector<int>& solution);
+    int randomInt(int min, int max);
 };

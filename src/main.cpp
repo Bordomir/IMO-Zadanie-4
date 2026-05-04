@@ -120,9 +120,10 @@ int main()
     constexpr unsigned int SEED = 0;
     advancedLocalSearches.emplace_back(make_unique<ILS>(dataA, randomSolverA, LocalSearchA, SEED, -1, timeLimitA, true, true));
     advancedLocalSearches.emplace_back(make_unique<ILS>(dataB, randomSolverB, LocalSearchB, SEED, -1, timeLimitB, true, true));
+    advancedLocalSearches.emplace_back(make_unique<LNS>(dataA, randomSolverA, LocalSearchA, SEED, 30, -1, timeLimitA, true, false));
+    advancedLocalSearches.emplace_back(make_unique<LNS>(dataB, randomSolverB, LocalSearchB, SEED, 30, -1, timeLimitB, true, false));
     advancedLocalSearches.emplace_back(make_unique<LNS>(dataA, randomSolverA, LocalSearchA, SEED, 30, -1, timeLimitA, true, true));
     advancedLocalSearches.emplace_back(make_unique<LNS>(dataB, randomSolverB, LocalSearchB, SEED, 30, -1, timeLimitB, true, true));
-    // TODO: Add more algorithms
 
     vector<Statistic> scoreStatistics;
     scoreStatistics.reserve(advancedLocalSearches.size());
